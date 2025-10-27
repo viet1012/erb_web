@@ -60,8 +60,8 @@ final List<MenuModel> menuList = [
     MenuModel('Định mức'),
     MenuModel('Đơn giá'),
     MenuModel('Công đoạn'),
-    MenuModel('Mã công đoạn'),
-    // MenuModel('Công đoạn', [MenuModel('Công đoạn'), MenuModel('Mã công đoạn')]),
+    // MenuModel('Mã công đoạn'),
+    MenuModel('Công đoạn', [MenuModel('Công đoạn'), MenuModel('Mã công đoạn')]),
     MenuModel('Khách hàng'),
   ]),
 ];
