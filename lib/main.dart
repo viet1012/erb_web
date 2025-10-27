@@ -1,5 +1,5 @@
+import 'package:erp_web/screens/login_screen.dart';
 import 'package:flutter/material.dart';
-import 'screens/master_menu_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,10 +11,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Quản lý hệ thống',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      title: 'ERP Management System',
       debugShowCheckedModeBanner: false,
-      home: const MasterMenuScreen(),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
+      home: const LoginScreen(), // 👈 Bắt đầu từ LoginScreen
     );
   }
 }

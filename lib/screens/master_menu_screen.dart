@@ -1,6 +1,9 @@
+// ========== 1. MASTER MENU SCREEN (Updated) ==========
 import 'package:flutter/material.dart';
 import '../models/menu_model.dart';
-import '../widgets/crud_table.dart';
+import '../widgets/menu_expansion_tile.dart';
+import 'master/customer_screen.dart';
+// Import các screen
 
 class MasterMenuScreen extends StatefulWidget {
   const MasterMenuScreen({super.key});
@@ -11,6 +14,49 @@ class MasterMenuScreen extends StatefulWidget {
 
 class _MasterMenuScreenState extends State<MasterMenuScreen> {
   MenuModel? selectedMenu;
+
+  // Map menu title với widget screen tương ứng
+  Widget _getScreenForMenu(String menuTitle) {
+    switch (menuTitle) {
+      case 'Tổng quan':
+        return const DashboardScreen();
+
+      // Quản lý đơn hàng
+      case 'Danh sách báo giá':
+        return const QuoteListScreen();
+      case 'Danh sách đơn hàng':
+        return const OrderListScreen();
+      case 'Tiến độ đơn hàng':
+        return const OrderProgressScreen();
+      case 'Đơn hàng xuất':
+        return const OrderExportScreen();
+
+      // Quản lý kho
+      case 'Kho vật liệu':
+        return const MaterialWarehouseScreen();
+      case 'Kho dụng cụ':
+        return const ToolWarehouseScreen();
+      case 'Kho bán thành phẩm':
+        return const SemiProductWarehouseScreen();
+
+      // Quản lý master
+      case 'Sản phẩm':
+        return const ProductScreen();
+      case 'Chi tiết':
+        return const DetailScreen();
+      case 'Định mức':
+        return const NormScreen();
+      case 'Đơn giá':
+        return const PriceScreen();
+      case 'Công đoạn':
+        return const ProcessScreen();
+      case 'Khách hàng':
+        return const CustomerScreen();
+
+      default:
+        return _buildWelcomeScreen();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -182,17 +228,14 @@ class _MasterMenuScreenState extends State<MasterMenuScreen> {
 
                 // Content Area
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: selectedMenu == null
-                          ? _buildWelcomeScreen()
-                          : Container(
-                              key: ValueKey(selectedMenu!.title),
-                              child: CrudTable(title: selectedMenu!.title),
-                            ),
-                    ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: selectedMenu == null
+                        ? _buildWelcomeScreen()
+                        : Container(
+                            key: ValueKey(selectedMenu!.title),
+                            child: _getScreenForMenu(selectedMenu!.title),
+                          ),
                   ),
                 ),
               ],
@@ -236,219 +279,291 @@ class _MasterMenuScreenState extends State<MasterMenuScreen> {
   }
 }
 
-Widget buildMenuTree({
-  required List<MenuModel> menus,
-  required Function(MenuModel) onSelect,
-  String? selectedTitle,
-  int level = 0,
-}) {
-  return Column(
-    children: menus.map((menu) {
-      final isSelected = selectedTitle == menu.title;
-      final hasChildren = menu.subMenus.isNotEmpty;
-
-      if (!hasChildren) {
-        return _MenuItemTile(
-          menu: menu,
-          isSelected: isSelected,
-          level: level,
-          onTap: () => onSelect(menu),
-        );
-      } else {
-        return _MenuExpansionTile(
-          menu: menu,
-          level: level,
-          selectedTitle: selectedTitle,
-          onSelect: onSelect,
-        );
-      }
-    }).toList(),
-  );
-}
-
-class _MenuItemTile extends StatefulWidget {
-  final MenuModel menu;
-  final bool isSelected;
-  final int level;
-  final VoidCallback onTap;
-
-  const _MenuItemTile({
-    required this.menu,
-    required this.isSelected,
-    required this.level,
-    required this.onTap,
-  });
+// ========== 2. SCREEN MẪU - Dashboard ==========
+// File: lib/screens/dashboard_screen.dart
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
 
   @override
-  State<_MenuItemTile> createState() => _MenuItemTileState();
+  State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _MenuItemTileState extends State<_MenuItemTile> {
-  bool isHovered = false;
+class _DashboardScreenState extends State<DashboardScreen> {
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => isLoading = true);
+
+    // TODO: Gọi API của bạn ở đây
+    // final response = await http.get('your-api-url');
+    await Future.delayed(const Duration(seconds: 1));
+
+    setState(() => isLoading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => isHovered = true),
-      onExit: (_) => setState(() => isHovered = false),
-      child: InkWell(
-        onTap: widget.onTap,
-        child: Container(
-          margin: EdgeInsets.only(
-            left: 12 + (widget.level * 16.0),
-            right: 12,
-            bottom: 4,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: widget.isSelected
-                ? Colors.white.withOpacity(0.2)
-                : isHovered
-                ? Colors.white.withOpacity(0.1)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: widget.isSelected
-                  ? Colors.white.withOpacity(0.3)
-                  : Colors.transparent,
-              width: 1,
-            ),
-          ),
-          child: Row(
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Stats Cards
+          Row(
             children: [
-              if (widget.level > 0)
-                Container(
-                  width: 6,
-                  height: 6,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    color: widget.isSelected
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.5),
-                    shape: BoxShape.circle,
-                  ),
-                )
-              else if (widget.menu.icon != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Icon(
-                    widget.menu.icon,
-                    size: 20,
-                    color: widget.isSelected
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.8),
-                  ),
-                ),
               Expanded(
-                child: Text(
-                  widget.menu.title,
-                  style: TextStyle(
-                    color: widget.isSelected
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.9),
-                    fontWeight: widget.isSelected
-                        ? FontWeight.bold
-                        : FontWeight.w500,
-                    fontSize: 14,
-                  ),
+                child: _buildStatCard(
+                  'Đơn hàng',
+                  '156',
+                  Icons.shopping_cart,
+                  Colors.blue,
                 ),
               ),
-              if (widget.isSelected)
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: Colors.greenAccent,
-                    shape: BoxShape.circle,
-                  ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildStatCard(
+                  'Doanh thu',
+                  '2.5M',
+                  Icons.attach_money,
+                  Colors.green,
                 ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildStatCard(
+                  'Sản phẩm',
+                  '89',
+                  Icons.inventory,
+                  Colors.orange,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildStatCard(
+                  'Khách hàng',
+                  '42',
+                  Icons.people,
+                  Colors.purple,
+                ),
+              ),
             ],
           ),
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class _MenuExpansionTile extends StatefulWidget {
-  final MenuModel menu;
-  final int level;
-  final String? selectedTitle;
-  final Function(MenuModel) onSelect;
+// ========== 3. TEMPLATE CHO CÁC SCREEN KHÁC ==========
+// Copy template này cho các screen còn lại
 
-  const _MenuExpansionTile({
-    required this.menu,
-    required this.level,
-    required this.selectedTitle,
-    required this.onSelect,
-  });
+// File: lib/screens/order/quote_list_screen.dart
+class QuoteListScreen extends StatefulWidget {
+  const QuoteListScreen({super.key});
 
   @override
-  State<_MenuExpansionTile> createState() => _MenuExpansionTileState();
+  State<QuoteListScreen> createState() => _QuoteListScreenState();
 }
 
-class _MenuExpansionTileState extends State<_MenuExpansionTile> {
-  bool isExpanded = false;
+class _QuoteListScreenState extends State<QuoteListScreen> {
+  List<dynamic> data = [];
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchQuotes();
+  }
+
+  Future<void> _fetchQuotes() async {
+    setState(() => isLoading = true);
+
+    // TODO: Gọi API
+    // final response = await http.get('api/quotes');
+    // setState(() => data = response.data);
+
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() => isLoading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: () => setState(() => isExpanded = !isExpanded),
-          child: Container(
-            margin: EdgeInsets.only(
-              left: 12 + (widget.level * 16.0),
-              right: 12,
-              bottom: 4,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: isExpanded
-                  ? Colors.white.withOpacity(0.1)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                if (widget.menu.icon != null)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: Icon(
-                      widget.menu.icon,
-                      size: 20,
-                      color: Colors.white.withOpacity(0.8),
-                    ),
-                  ),
-                Expanded(
-                  child: Text(
-                    widget.menu.title,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                Icon(
-                  isExpanded
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_right,
-                  color: Colors.white.withOpacity(0.7),
-                  size: 20,
-                ),
-              ],
-            ),
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Danh sách báo giá',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  // Thêm mới
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Thêm mới'),
+              ),
+            ],
           ),
-        ),
-        if (isExpanded)
-          buildMenuTree(
-            menus: widget.menu.subMenus,
-            onSelect: widget.onSelect,
-            selectedTitle: widget.selectedTitle,
-            level: widget.level + 1,
+          const SizedBox(height: 20),
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _buildDataTable(),
           ),
-      ],
+        ],
+      ),
     );
   }
+
+  Widget _buildDataTable() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Center(
+        child: Text('Dữ liệu sẽ hiển thị ở đây sau khi gọi API'),
+      ),
+    );
+  }
+}
+
+// Tương tự tạo các class cho:
+class OrderListScreen extends StatelessWidget {
+  const OrderListScreen({super.key});
+  @override
+  Widget build(BuildContext context) =>
+      const Center(child: Text('Danh sách đơn hàng'));
+}
+
+class OrderProgressScreen extends StatelessWidget {
+  const OrderProgressScreen({super.key});
+  @override
+  Widget build(BuildContext context) =>
+      const Center(child: Text('Tiến độ đơn hàng'));
+}
+
+class OrderExportScreen extends StatelessWidget {
+  const OrderExportScreen({super.key});
+  @override
+  Widget build(BuildContext context) =>
+      const Center(child: Text('Đơn hàng xuất'));
+}
+
+class MaterialWarehouseScreen extends StatelessWidget {
+  const MaterialWarehouseScreen({super.key});
+  @override
+  Widget build(BuildContext context) =>
+      const Center(child: Text('Kho vật liệu'));
+}
+
+class ToolWarehouseScreen extends StatelessWidget {
+  const ToolWarehouseScreen({super.key});
+  @override
+  Widget build(BuildContext context) =>
+      const Center(child: Text('Kho dụng cụ'));
+}
+
+class SemiProductWarehouseScreen extends StatelessWidget {
+  const SemiProductWarehouseScreen({super.key});
+  @override
+  Widget build(BuildContext context) =>
+      const Center(child: Text('Kho bán thành phẩm'));
+}
+
+class ProductScreen extends StatelessWidget {
+  const ProductScreen({super.key});
+  @override
+  Widget build(BuildContext context) => const Center(child: Text('Sản phẩm'));
+}
+
+class DetailScreen extends StatelessWidget {
+  const DetailScreen({super.key});
+  @override
+  Widget build(BuildContext context) => const Center(child: Text('Chi tiết'));
+}
+
+class NormScreen extends StatelessWidget {
+  const NormScreen({super.key});
+  @override
+  Widget build(BuildContext context) => const Center(child: Text('Định mức'));
+}
+
+class PriceScreen extends StatelessWidget {
+  const PriceScreen({super.key});
+  @override
+  Widget build(BuildContext context) => const Center(child: Text('Đơn giá'));
+}
+
+class ProcessScreen extends StatelessWidget {
+  const ProcessScreen({super.key});
+  @override
+  Widget build(BuildContext context) => const Center(child: Text('Công đoạn'));
 }
