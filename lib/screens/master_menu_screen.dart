@@ -6,6 +6,7 @@ import 'dashboard/dashboard_screen.dart';
 import 'master/customer_screen.dart';
 import 'master/detail_screen.dart';
 import 'master/norm_screen.dart';
+import 'master/process_screen.dart';
 import 'master/product_price_screen.dart';
 import 'master/product_screen.dart';
 // Import các screen
@@ -403,10 +404,4 @@ class SemiProductWarehouseScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       const Center(child: Text('Kho bán thành phẩm'));
-}
-
-class ProcessScreen extends StatelessWidget {
-  const ProcessScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(child: Text('Công đoạn'));
 }
