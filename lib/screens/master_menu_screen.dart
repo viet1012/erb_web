@@ -2,7 +2,12 @@
 import 'package:flutter/material.dart';
 import '../models/menu_model.dart';
 import '../widgets/menu_expansion_tile.dart';
+import 'dashboard/dashboard_screen.dart';
 import 'master/customer_screen.dart';
+import 'master/detail_screen.dart';
+import 'master/norm_screen.dart';
+import 'master/product_price_screen.dart';
+import 'master/product_screen.dart';
 // Import các screen
 
 class MasterMenuScreen extends StatefulWidget {
@@ -20,7 +25,6 @@ class _MasterMenuScreenState extends State<MasterMenuScreen> {
     switch (menuTitle) {
       case 'Tổng quan':
         return const DashboardScreen();
-
       // Quản lý đơn hàng
       case 'Danh sách báo giá':
         return const QuoteListScreen();
@@ -47,7 +51,7 @@ class _MasterMenuScreenState extends State<MasterMenuScreen> {
       case 'Định mức':
         return const NormScreen();
       case 'Đơn giá':
-        return const PriceScreen();
+        return const ProductPriceScreen();
       case 'Công đoạn':
         return const ProcessScreen();
       case 'Khách hàng':
@@ -279,143 +283,6 @@ class _MasterMenuScreenState extends State<MasterMenuScreen> {
   }
 }
 
-// ========== 2. SCREEN MẪU - Dashboard ==========
-// File: lib/screens/dashboard_screen.dart
-class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
-
-  @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
-}
-
-class _DashboardScreenState extends State<DashboardScreen> {
-  bool isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() => isLoading = true);
-
-    // TODO: Gọi API của bạn ở đây
-    // final response = await http.get('your-api-url');
-    await Future.delayed(const Duration(seconds: 1));
-
-    setState(() => isLoading = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Stats Cards
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Đơn hàng',
-                  '156',
-                  Icons.shopping_cart,
-                  Colors.blue,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  'Doanh thu',
-                  '2.5M',
-                  Icons.attach_money,
-                  Colors.green,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  'Sản phẩm',
-                  '89',
-                  Icons.inventory,
-                  Colors.orange,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  'Khách hàng',
-                  '42',
-                  Icons.people,
-                  Colors.purple,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ========== 3. TEMPLATE CHO CÁC SCREEN KHÁC ==========
 // Copy template này cho các screen còn lại
 
@@ -536,30 +403,6 @@ class SemiProductWarehouseScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       const Center(child: Text('Kho bán thành phẩm'));
-}
-
-class ProductScreen extends StatelessWidget {
-  const ProductScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(child: Text('Sản phẩm'));
-}
-
-class DetailScreen extends StatelessWidget {
-  const DetailScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(child: Text('Chi tiết'));
-}
-
-class NormScreen extends StatelessWidget {
-  const NormScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(child: Text('Định mức'));
-}
-
-class PriceScreen extends StatelessWidget {
-  const PriceScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(child: Text('Đơn giá'));
 }
 
 class ProcessScreen extends StatelessWidget {
