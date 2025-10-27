@@ -18,11 +18,34 @@ class _CustomerScreenState extends State<CustomerScreen> {
   bool isLoading = false;
   final TextEditingController searchController = TextEditingController();
 
+  // Column filters
+  Map<String, Set<String>> columnFilters = {
+    'maKhachHang': {},
+    'tenKhachHang': {},
+    'diaChi': {},
+    'soDienThoai': {},
+    'email': {},
+    'maSoThue': {},
+  };
+
+  Map<String, Set<String>> availableValues = {
+    'maKhachHang': {},
+    'tenKhachHang': {},
+    'diaChi': {},
+    'soDienThoai': {},
+    'email': {},
+    'maSoThue': {},
+  };
+
+  // Date range filter
+  DateTime? filterFromDate;
+  DateTime? filterToDate;
+
   @override
   void initState() {
     super.initState();
     _loadDemoData();
-    searchController.addListener(_filterCustomers);
+    searchController.addListener(_applyFilters);
   }
 
   @override
@@ -31,7 +54,6 @@ class _CustomerScreenState extends State<CustomerScreen> {
     super.dispose();
   }
 
-  // Demo data - Thay bằng API call sau
   void _loadDemoData() {
     setState(() {
       customers = List.generate(
@@ -51,37 +73,328 @@ class _CustomerScreenState extends State<CustomerScreen> {
         ),
       );
       filteredCustomers = customers;
+      _extractAvailableValues();
     });
   }
 
-  // TODO: Thay bằng API call thật
-  /*
-  Future<void> _fetchCustomers() async {
-    setState(() => isLoading = true);
-    try {
-      final data = await CustomerService.getAll();
-      setState(() {
-        customers = data;
-        filteredCustomers = data;
-      });
-    } catch (e) {
-      _showErrorDialog('Lỗi tải dữ liệu: $e');
-    } finally {
-      setState(() => isLoading = false);
-    }
+  void _extractAvailableValues() {
+    availableValues['maKhachHang'] = customers
+        .map((c) => c.maKhachHang)
+        .toSet();
+    availableValues['tenKhachHang'] = customers
+        .map((c) => c.tenKhachHang)
+        .toSet();
+    availableValues['diaChi'] = customers.map((c) => c.diaChi).toSet();
+    availableValues['soDienThoai'] = customers
+        .map((c) => c.soDienThoai)
+        .toSet();
+    availableValues['email'] = customers.map((c) => c.email).toSet();
+    availableValues['maSoThue'] = customers.map((c) => c.maSoThue).toSet();
   }
-  */
 
-  void _filterCustomers() {
+  void _applyFilters() {
     final query = searchController.text.toLowerCase();
     setState(() {
       filteredCustomers = customers.where((customer) {
-        return customer.maKhachHang.toLowerCase().contains(query) ||
+        // Text search filter
+        final matchesSearch =
+            query.isEmpty ||
+            customer.maKhachHang.toLowerCase().contains(query) ||
             customer.tenKhachHang.toLowerCase().contains(query) ||
             customer.soDienThoai.contains(query) ||
             customer.email.toLowerCase().contains(query);
+
+        // Column filters
+        final matchesColumnFilters =
+            (columnFilters['maKhachHang']!.isEmpty ||
+                columnFilters['maKhachHang']!.contains(customer.maKhachHang)) &&
+            (columnFilters['tenKhachHang']!.isEmpty ||
+                columnFilters['tenKhachHang']!.contains(
+                  customer.tenKhachHang,
+                )) &&
+            (columnFilters['diaChi']!.isEmpty ||
+                columnFilters['diaChi']!.contains(customer.diaChi)) &&
+            (columnFilters['soDienThoai']!.isEmpty ||
+                columnFilters['soDienThoai']!.contains(customer.soDienThoai)) &&
+            (columnFilters['email']!.isEmpty ||
+                columnFilters['email']!.contains(customer.email)) &&
+            (columnFilters['maSoThue']!.isEmpty ||
+                columnFilters['maSoThue']!.contains(customer.maSoThue));
+
+        // Date range filter
+        final matchesDateRange =
+            (filterFromDate == null ||
+                customer.ngayTao!.isAfter(
+                  filterFromDate!.subtract(const Duration(days: 1)),
+                )) &&
+            (filterToDate == null ||
+                customer.ngayTao!.isBefore(
+                  filterToDate!.add(const Duration(days: 1)),
+                ));
+
+        return matchesSearch && matchesColumnFilters && matchesDateRange;
       }).toList();
     });
+  }
+
+  void _showColumnFilter(String columnName, String columnTitle) {
+    final tempSelected = Set<String>.from(columnFilters[columnName]!);
+    final searchController = TextEditingController();
+    List<String> filteredValues = availableValues[columnName]!.toList()..sort();
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.filter_list, size: 20),
+                const SizedBox(width: 8),
+                Text('Lọc: $columnTitle'),
+              ],
+            ),
+            content: SizedBox(
+              width: 400,
+              height: 500,
+              child: Column(
+                children: [
+                  // Search trong filter
+                  TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Tìm kiếm...',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        if (value.isEmpty) {
+                          filteredValues = availableValues[columnName]!.toList()
+                            ..sort();
+                        } else {
+                          filteredValues =
+                              availableValues[columnName]!
+                                  .where(
+                                    (v) => v.toLowerCase().contains(
+                                      value.toLowerCase(),
+                                    ),
+                                  )
+                                  .toList()
+                                ..sort();
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // Select All / Clear All
+                  Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: () {
+                          setDialogState(() {
+                            tempSelected.addAll(filteredValues);
+                          });
+                        },
+                        icon: const Icon(Icons.check_box, size: 18),
+                        label: const Text('Chọn tất cả'),
+                      ),
+                      TextButton.icon(
+                        onPressed: () {
+                          setDialogState(() {
+                            tempSelected.removeAll(filteredValues);
+                          });
+                        },
+                        icon: const Icon(
+                          Icons.check_box_outline_blank,
+                          size: 18,
+                        ),
+                        label: const Text('Bỏ chọn'),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  // List of values
+                  Expanded(
+                    child: ListView(
+                      children: filteredValues.map((value) {
+                        final isSelected = tempSelected.contains(value);
+                        return CheckboxListTile(
+                          dense: true,
+                          title: Text(
+                            value,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          value: isSelected,
+                          onChanged: (checked) {
+                            setDialogState(() {
+                              if (checked == true) {
+                                tempSelected.add(value);
+                              } else {
+                                tempSelected.remove(value);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Hủy'),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    columnFilters[columnName] = {};
+                  });
+                  _applyFilters();
+                  Navigator.pop(context);
+                },
+                child: const Text('Xóa bộ lọc'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    columnFilters[columnName] = tempSelected;
+                  });
+                  _applyFilters();
+                  Navigator.pop(context);
+                },
+                child: const Text('Áp dụng'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showDateFilter() {
+    DateTime? tempFromDate = filterFromDate;
+    DateTime? tempToDate = filterToDate;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.date_range, size: 20),
+                SizedBox(width: 8),
+                Text('Lọc: Ngày tạo'),
+              ],
+            ),
+            content: SizedBox(
+              width: 300,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    title: const Text('Từ ngày'),
+                    subtitle: Text(
+                      tempFromDate != null
+                          ? DateFormat('dd/MM/yyyy').format(tempFromDate!)
+                          : 'Chưa chọn',
+                    ),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: tempFromDate ?? DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) {
+                        setDialogState(() {
+                          tempFromDate = picked;
+                        });
+                      }
+                    },
+                  ),
+                  ListTile(
+                    title: const Text('Đến ngày'),
+                    subtitle: Text(
+                      tempToDate != null
+                          ? DateFormat('dd/MM/yyyy').format(tempToDate!)
+                          : 'Chưa chọn',
+                    ),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: tempToDate ?? DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) {
+                        setDialogState(() {
+                          tempToDate = picked;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Hủy'),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    filterFromDate = null;
+                    filterToDate = null;
+                  });
+                  _applyFilters();
+                  Navigator.pop(context);
+                },
+                child: const Text('Xóa bộ lọc'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    filterFromDate = tempFromDate;
+                    filterToDate = tempToDate;
+                  });
+                  _applyFilters();
+                  Navigator.pop(context);
+                },
+                child: const Text('Áp dụng'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _clearAllFilters() {
+    setState(() {
+      columnFilters.forEach((key, value) {
+        value.clear();
+      });
+      filterFromDate = null;
+      filterToDate = null;
+      searchController.clear();
+      _applyFilters();
+    });
+  }
+
+  bool _hasActiveFilters() {
+    return columnFilters.values.any((set) => set.isNotEmpty) ||
+        filterFromDate != null ||
+        filterToDate != null;
   }
 
   void _showAddDialog() {
@@ -212,11 +525,9 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 } else {
                   customers.add(newCustomer);
                 }
-                _filterCustomers();
+                _extractAvailableValues();
+                _applyFilters();
               });
-
-              // TODO: Call API để lưu
-              // await CustomerService.save(newCustomer);
 
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -252,11 +563,9 @@ class _CustomerScreenState extends State<CustomerScreen> {
             onPressed: () {
               setState(() {
                 customers.removeWhere((c) => c.stt == customer.stt);
-                _filterCustomers();
+                _extractAvailableValues();
+                _applyFilters();
               });
-
-              // TODO: Call API để xóa
-              // await CustomerService.delete(customer.stt);
 
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -275,80 +584,59 @@ class _CustomerScreenState extends State<CustomerScreen> {
   }
 
   Future<void> _importExcel() async {
-    // TODO: Implement import Excel
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Chức năng import Excel đang được phát triển'),
         backgroundColor: Colors.orange,
       ),
     );
-
-    /* Implement với file_picker và excel packages:
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['xlsx', 'xls'],
-    );
-    
-    if (result != null) {
-      final bytes = result.files.first.bytes;
-      final excel = Excel.decodeBytes(bytes!);
-      
-      List<Customer> importedCustomers = [];
-      for (var row in excel.tables[excel.tables.keys.first]!.rows.skip(1)) {
-        importedCustomers.add(Customer.fromExcelRow(row));
-      }
-      
-      setState(() {
-        customers.addAll(importedCustomers);
-        _filterCustomers();
-      });
-    }
-    */
   }
 
   Future<void> _exportExcel() async {
-    // TODO: Implement export Excel
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Chức năng export Excel đang được phát triển'),
         backgroundColor: Colors.orange,
       ),
     );
+  }
 
-    /* Implement với excel package:
-    var excel = Excel.createExcel();
-    var sheet = excel['Customers'];
-    
-    // Header
-    sheet.appendRow([
-      'STT', 'Mã KH', 'Tên KH', 'Địa chỉ', 'SĐT', 
-      'Email', 'MST', 'Ngày tạo', 'Người tạo'
-    ]);
-    
-    // Data
-    for (var customer in customers) {
-      sheet.appendRow([
-        customer.stt,
-        customer.maKhachHang,
-        customer.tenKhachHang,
-        customer.diaChi,
-        customer.soDienThoai,
-        customer.email,
-        customer.maSoThue,
-        customer.ngayTao?.toString(),
-        customer.nguoiTao,
-      ]);
-    }
-    
-    // Save file
-    final bytes = excel.encode()!;
-    final blob = html.Blob([bytes]);
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    html.AnchorElement(href: url)
-      ..setAttribute('download', 'customers_${DateTime.now().millisecondsSinceEpoch}.xlsx')
-      ..click();
-    html.Url.revokeObjectUrl(url);
-    */
+  Widget _buildFilterableColumnLabel(String label, String columnName) {
+    final hasFilter = columnFilters[columnName]!.isNotEmpty;
+    return InkWell(
+      onTap: () => _showColumnFilter(columnName, label),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(width: 4),
+          Icon(
+            hasFilter ? Icons.filter_alt : Icons.filter_alt_outlined,
+            size: 16,
+            color: hasFilter ? Colors.blue[700] : Colors.grey[600],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateFilterLabel() {
+    final hasFilter = filterFromDate != null || filterToDate != null;
+    return InkWell(
+      onTap: _showDateFilter,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Ngày tạo', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(width: 4),
+          Icon(
+            hasFilter ? Icons.filter_alt : Icons.filter_alt_outlined,
+            size: 16,
+            color: hasFilter ? Colors.blue[700] : Colors.grey[600],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -416,6 +704,17 @@ class _CustomerScreenState extends State<CustomerScreen> {
                 ),
               ),
               const SizedBox(width: 12),
+              if (_hasActiveFilters())
+                IconButton(
+                  onPressed: _clearAllFilters,
+                  icon: const Icon(Icons.filter_alt_off),
+                  tooltip: 'Xóa tất cả bộ lọc',
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.red[50],
+                    foregroundColor: Colors.red[700],
+                  ),
+                ),
+              const SizedBox(width: 12),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -454,129 +753,156 @@ class _CustomerScreenState extends State<CustomerScreen> {
               ),
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
-                      child: DataTable(
-                        headingRowColor: MaterialStateProperty.all(
-                          Colors.blue[50],
-                        ),
-                        columns: const [
-                          DataColumn(
-                            label: Text(
-                              'STT',
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                  : filteredCustomers.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Không tìm thấy khách hàng nào',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
                             ),
                           ),
-                          DataColumn(
-                            label: Text(
-                              'Mã KH',
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                          if (_hasActiveFilters()) ...[
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: _clearAllFilters,
+                              icon: const Icon(Icons.filter_alt_off),
+                              label: const Text('Xóa bộ lọc'),
                             ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Tên khách hàng',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Địa chỉ',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Số điện thoại',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Email',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Mã số thuế',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Ngày tạo',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Hành động',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
+                          ],
                         ],
-                        rows: filteredCustomers.map((customer) {
-                          return DataRow(
-                            cells: [
-                              DataCell(Text(customer.stt.toString())),
-                              DataCell(Text(customer.maKhachHang)),
-                              DataCell(
-                                SizedBox(
-                                  width: 200,
-                                  child: Text(
-                                    customer.tenKhachHang,
-                                    overflow: TextOverflow.ellipsis,
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SingleChildScrollView(
+                        child: DataTable(
+                          headingRowColor: MaterialStateProperty.all(
+                            Colors.blue[50],
+                          ),
+                          columns: [
+                            const DataColumn(
+                              label: Text(
+                                'STT',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: _buildFilterableColumnLabel(
+                                'Mã KH',
+                                'maKhachHang',
+                              ),
+                            ),
+                            DataColumn(
+                              label: _buildFilterableColumnLabel(
+                                'Tên khách hàng',
+                                'tenKhachHang',
+                              ),
+                            ),
+                            DataColumn(
+                              label: _buildFilterableColumnLabel(
+                                'Địa chỉ',
+                                'diaChi',
+                              ),
+                            ),
+                            DataColumn(
+                              label: _buildFilterableColumnLabel(
+                                'Số điện thoại',
+                                'soDienThoai',
+                              ),
+                            ),
+                            DataColumn(
+                              label: _buildFilterableColumnLabel(
+                                'Email',
+                                'email',
+                              ),
+                            ),
+                            DataColumn(
+                              label: _buildFilterableColumnLabel(
+                                'Mã số thuế',
+                                'maSoThue',
+                              ),
+                            ),
+                            DataColumn(label: _buildDateFilterLabel()),
+                            const DataColumn(
+                              label: Text(
+                                'Hành động',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                          rows: filteredCustomers.map((customer) {
+                            return DataRow(
+                              cells: [
+                                DataCell(Text(customer.stt.toString())),
+                                DataCell(Text(customer.maKhachHang)),
+                                DataCell(
+                                  SizedBox(
+                                    width: 200,
+                                    child: Text(
+                                      customer.tenKhachHang,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              DataCell(
-                                SizedBox(
-                                  width: 250,
-                                  child: Text(
-                                    customer.diaChi,
-                                    overflow: TextOverflow.ellipsis,
+                                DataCell(
+                                  SizedBox(
+                                    width: 250,
+                                    child: Text(
+                                      customer.diaChi,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              DataCell(Text(customer.soDienThoai)),
-                              DataCell(Text(customer.email)),
-                              DataCell(Text(customer.maSoThue)),
-                              DataCell(
-                                Text(
-                                  customer.ngayTao != null
-                                      ? DateFormat(
-                                          'dd/MM/yyyy',
-                                        ).format(customer.ngayTao!)
-                                      : '',
+                                DataCell(Text(customer.soDienThoai)),
+                                DataCell(Text(customer.email)),
+                                DataCell(Text(customer.maSoThue)),
+                                DataCell(
+                                  Text(
+                                    customer.ngayTao != null
+                                        ? DateFormat(
+                                            'dd/MM/yyyy',
+                                          ).format(customer.ngayTao!)
+                                        : '',
+                                  ),
                                 ),
-                              ),
-                              DataCell(
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.edit,
-                                        color: Colors.blue,
+                                DataCell(
+                                  Row(
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.edit,
+                                          color: Colors.blue,
+                                        ),
+                                        tooltip: 'Sửa',
+                                        onPressed: () =>
+                                            _showEditDialog(customer),
                                       ),
-                                      tooltip: 'Sửa',
-                                      onPressed: () =>
-                                          _showEditDialog(customer),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.delete,
-                                        color: Colors.red,
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
+                                        ),
+                                        tooltip: 'Xóa',
+                                        onPressed: () =>
+                                            _deleteCustomer(customer),
                                       ),
-                                      tooltip: 'Xóa',
-                                      onPressed: () =>
-                                          _deleteCustomer(customer),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
+                              ],
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
             ),
