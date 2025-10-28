@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/product_model.dart';
+import '../../models/master/product_model.dart';
 import '../../widgets/table_column_config.dart';
 
 class ProductScreen extends StatefulWidget {

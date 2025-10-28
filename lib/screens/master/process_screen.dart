@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/process_model.dart';
+import '../../models/master/process_model.dart';
 import '../../widgets/table_column_config.dart';
 
 class ProcessScreen extends StatefulWidget {

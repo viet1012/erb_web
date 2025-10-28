@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/norm_model.dart';
+import '../../models/master/norm_model.dart';
 import '../../widgets/table_column_config.dart';
 
 class NormScreen extends StatefulWidget {

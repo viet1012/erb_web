@@ -1,4 +1,5 @@
 import 'package:erp_web/screens/login_screen.dart';
+import 'package:erp_web/screens/master_menu_screen.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -17,7 +18,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const LoginScreen(), // 👈 Bắt đầu từ LoginScreen
+      home: const MasterMenuScreen(), // 👈 Bắt đầu từ LoginScreen
     );
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/product_price_model.dart';
+import '../../models/master/product_price_model.dart';
 import '../../widgets/table_column_config.dart';
 
 class ProductPriceScreen extends StatefulWidget {

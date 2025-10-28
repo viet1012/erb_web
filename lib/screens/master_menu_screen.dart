@@ -6,6 +6,7 @@ import 'dashboard/dashboard_screen.dart';
 import 'master/customer_screen.dart';
 import 'master/detail_screen.dart';
 import 'master/norm_screen.dart';
+import 'master/process_management_screen.dart';
 import 'master/process_screen.dart';
 import 'master/product_price_screen.dart';
 import 'master/product_screen.dart';
@@ -54,7 +55,7 @@ class _MasterMenuScreenState extends State<MasterMenuScreen> {
       case 'Đơn giá':
         return const ProductPriceScreen();
       case 'Công đoạn':
-        return const ProcessScreen();
+        return const ProcessManagementScreen();
       case 'Khách hàng':
         return const CustomerScreen();
 

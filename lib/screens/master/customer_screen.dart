@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/customer_model.dart';
+import '../../models/master/customer_model.dart';
 import '../../widgets/table_column_config.dart';
 
 class CustomerScreen extends StatefulWidget {
